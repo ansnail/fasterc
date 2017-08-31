@@ -1,0 +1,73 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion "25.0.3"
+
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile 'com.google.code.gson:gson:2.7'
+
+}
+
+//如果fasterc-dex代码有变化,生成fasterc-runtime.dex
+// 放进fasterc-gradle/src/main/resources/目录里面
+project.afterEvaluate {
+    android.libraryVariants.all { variant ->
+        def variantName = variant.name.capitalize()
+        if ("Release" != variantName) {
+            return
+        }
+
+        Task generateDexTask = project.tasks.create("generateRuntimeDexFor${variantName}")
+        generateDexTask.group = 'fasterc'
+        generateDexTask.dependsOn variant.javaCompile
+        generateDexTask.doLast {
+            File inputDirectory = project.file("build/intermediates/classes/release")
+            String sdkDirectory = project.android.getSdkDirectory()
+            if (sdkDirectory.contains("\\")) {
+                sdkDirectory = sdkDirectory.replace("\\", "/");
+            }
+            String dxcmd
+            File dx = new File(sdkDirectory, "build-tools${File.separator}${project.android.getBuildToolsVersion()}${File.separator}dx")
+            dxcmd = dx.absolutePath
+            if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                dxcmd = "${dxcmd}.bat"
+            }
+            project.file("build/outputs/fasterc/${variantName.toLowerCase()}").mkdirs()
+            File outDex = project.file("build/outputs/fasterc/${variantName.toLowerCase()}/fasterc-runtime.dex")
+            dxcmd = "${dxcmd} --dex --output=${outDex} ${inputDirectory}"
+            project.logger.error("dxcmd===${dxcmd}")
+            project.logger.error("outDex===${outDex}")
+            def process = dxcmd.execute()
+            int status = process.waitFor()
+            process.destroy()
+            project.logger.error("status===${status}")
+            if (status != 0) {
+                throw new RuntimeException("generate fasterc runtime dex fail!")
+            }
+
+            project.copy {
+                from outDex
+                into project.rootProject.file('fasterc-gradle/src/main/resources')
+            }
+
+            project.file("build/intermediates/classes/release").deleteDir()
+        }
+    }
+}

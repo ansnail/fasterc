@@ -1,0 +1,69 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+
+dependencies {
+    compile 'com.google.code.gson:gson:2.7'
+    compile 'org.apache.ant:ant:1.8.2'
+    compile 'com.google.guava:guava:20.0'
+    compile 'com.android.tools.ddms:ddmlib:25.3.1'
+}
+
+
+
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+
+        resources {
+            srcDir 'src/main/resources'
+        }
+    }
+}
+
+version='1.0.0'
+
+def generated = new File("${project.buildDir}/generated/java")
+sourceSets {
+    main {
+        java {
+            srcDir generated
+        }
+    }
+}
+
+
+task generateVersionConstantsJava {
+    inputs.property("version", version)
+    ext.versionFile = new File(generated, "top/lib/fasterc/constants/Version.java")
+    outputs.file(versionFile)
+}
+
+
+
+generateVersionConstantsJava << {
+    versionFile.parentFile.mkdirs()
+    versionFile.text = """
+package top.lib.fasterc.constants;
+
+        public final class Version {
+            private Version() {}
+            public static final String FASTERC_BUILD_VERSION = "$version";
+        }
+"""
+}
+
+tasks.compileJava.dependsOn generateVersionConstantsJava
+
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: uri('../repo'))
+        }
+    }
+}

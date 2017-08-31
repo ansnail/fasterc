@@ -1,0 +1,1 @@
+include ':fasterc-gradle', ':fasterc-lib', ':fasterc-dex', ':sample'

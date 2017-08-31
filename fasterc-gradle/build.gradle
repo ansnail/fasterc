@@ -1,0 +1,28 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+    compile 'com.android.tools.build:gradle:2.2.0'
+    compile project(path: ':fasterc-lib')
+}
+
+repositories {
+    jcenter()
+}
+
+group='top.gradle.fasterc'
+version='1.0.0'
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: uri('../repo'))
+        }
+    }
+}
+
+//apply from: rootProject.file('bintray.gradle')
