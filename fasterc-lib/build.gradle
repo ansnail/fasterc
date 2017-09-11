@@ -60,10 +60,12 @@ tasks.compileJava.dependsOn generateVersionConstantsJava
 
 
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: uri('../repo'))
-        }
-    }
-}
+//uploadArchives {
+//    repositories {
+//        mavenDeployer {
+//            repository(url: uri('../repo'))
+//        }
+//    }
+//}
+
+apply from: rootProject.file('bintray.gradle')
